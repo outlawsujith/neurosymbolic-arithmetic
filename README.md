@@ -36,6 +36,8 @@ loss = −log P(y_observed)
 Requires Python 3.9+ and NumPy.
 
 ```bash
+git clone https://github.com/outlawsujith/neurosymbolic-arithmetic.git
+cd neurosymbolic-arithmetic
 pip install -r requirements.txt
 python train.py            # learn digits from sums, compare with a neural baseline
 python demo.py             # perceive, reason, explain
