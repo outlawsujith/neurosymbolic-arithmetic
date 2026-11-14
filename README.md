@@ -36,20 +36,29 @@ loss = −log P(y_observed)
 Requires Python 3.9+ and NumPy.
 
 ```bash
+pip install git+https://github.com/outlawsujith/neurosymbolic-arithmetic.git
+nesy-train                 # learn digits from sums, compare with a neural baseline
+nesy-demo                  # perceive, reason, explain
+```
+
+To work on the code instead, clone the repo and install it in editable mode:
+
+```bash
 git clone https://github.com/outlawsujith/neurosymbolic-arithmetic.git
 cd neurosymbolic-arithmetic
-pip install -r requirements.txt
-python train.py            # learn digits from sums, compare with a neural baseline
-python demo.py             # perceive, reason, explain
+pip install -e .
 python -m unittest discover -s tests -v
 ```
 
-Other tasks: `python train.py --task product` (also `difference`, `concat`).
+If the `nesy-train` command is not on your PATH (or is blocked on your machine), use
+`python -m nesy.train` and `python -m nesy.demo` instead.
+
+Other tasks: `nesy-train --task product` (also `difference`, `concat`).
 Add your own in `TASKS` in [nesy/semantic.py](nesy/semantic.py) as any Python function of two digits.
 
 ## Results
 
-`python train.py --sweep` (seed 0, 2000 unseen test pairs, both models given the
+`nesy-train --sweep` (seed 0, 2000 unseen test pairs, both models given the
 same data and the same number of gradient steps):
 
 | Training pairs | Neurosymbolic (sum accuracy) | Neural baseline (sum accuracy) | Digit accuracy (neurosymbolic) |

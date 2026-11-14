@@ -1,8 +1,8 @@
 """Train the neurosymbolic model and compare it with a pure neural baseline.
 
-    python train.py                      # default: learn digits from sums
-    python train.py --task product --n-train 1000
-    python train.py --sweep              # data-efficiency comparison table
+    nesy-train                           # default: learn digits from sums
+    nesy-train --task product --n-train 1000
+    nesy-train --sweep                   # data-efficiency comparison table
 """
 
 from __future__ import annotations

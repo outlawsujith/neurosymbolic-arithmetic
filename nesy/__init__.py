@@ -1,5 +1,7 @@
 """Neurosymbolic arithmetic: neural perception + symbolic reasoning in pure NumPy."""
 
+__version__ = "0.1.0"
+
 from .data import make_pairs, render_digit, to_ascii
 from .logic import KnowledgeBase, parse_atom, parse_rule
 from .perception import MLP, softmax

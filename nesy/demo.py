@@ -1,7 +1,7 @@
 """Perceive two noisy digit images, reason about them, and explain the answer.
 
-    python demo.py              # uses model.npz, training one first if missing
-    python demo.py --seed 7 --examples 3
+    nesy-demo                   # uses model.npz, training one first if missing
+    nesy-demo --seed 7 --examples 3
 """
 
 from __future__ import annotations

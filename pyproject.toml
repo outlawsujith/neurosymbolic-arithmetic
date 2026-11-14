@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurosymbolic-arithmetic"
+version = "0.1.0"
+description = "Neurosymbolic AI from scratch in NumPy: a neural net learns digits through differentiable symbolic reasoning, with an explainable logic reasoner."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "outlawsujith" }]
+keywords = ["neurosymbolic", "neuro-symbolic", "logic", "datalog", "semantic-loss", "numpy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["numpy>=1.22"]
+
+[project.urls]
+Homepage = "https://github.com/outlawsujith/neurosymbolic-arithmetic"
+Issues = "https://github.com/outlawsujith/neurosymbolic-arithmetic/issues"
+
+[project.scripts]
+nesy-train = "nesy.train:main"
+nesy-demo = "nesy.demo:main"
+
+[tool.setuptools]
+packages = ["nesy"]
