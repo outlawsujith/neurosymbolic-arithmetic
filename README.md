@@ -114,3 +114,7 @@ print("\n".join(kb.explain("path(a, c)")))
 - Manhaeve et al., *DeepProbLog: Neural Probabilistic Logic Programming*, NeurIPS 2018
 - Xu et al., *A Semantic Loss Function for Deep Learning with Symbolic Knowledge*, ICML 2018
 - Garcez & Lamb, *Neurosymbolic AI: The 3rd Wave*, 2020
+
+## License
+
+MIT. See [LICENSE](LICENSE).
