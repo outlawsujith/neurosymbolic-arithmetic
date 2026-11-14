@@ -1,10 +1,10 @@
 name: Publish to PyPI
 
-# Runs when a GitHub release is published. Uses PyPI Trusted Publishing,
+# Runs when a version tag (v0.1.0, v0.2.0, ...) is pushed. Uses PyPI Trusted Publishing,
 # so no password or API token is stored anywhere.
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["v*"]
 
 jobs:
   build:
