@@ -1,0 +1,19 @@
+name: energy-optimizer tests
+on:
+  push:
+    paths: ["energy-optimizer/**", ".github/workflows/energy-optimizer.yml"]
+  pull_request:
+    paths: ["energy-optimizer/**"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: energy-optimizer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q

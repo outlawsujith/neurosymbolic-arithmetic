@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neurosymbolic Energy Optimiser</title>
+<style>
+:root{color-scheme:light;--bg:#f4f4f2;--surface:#fcfcfb;--line:#dddcd6;--text:#0b0b0b;--text2:#52514e;
+  --s1:#2a78d6;--s2:#eb6834;--good:#1a7f37;--bad:#c62828;--band:#ecebe6}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#111110;--surface:#1a1a19;--line:#34332f;
+  --text:#f0efec;--text2:#c3c2b7;--s1:#3987e5;--s2:#d95926;--good:#4cc26a;--bad:#f07070;--band:#242421}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:0 0 2px}
+.sub{color:var(--text2);margin:0 0 16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile .k{color:var(--text2);font-size:13px}.tile .v{font-size:26px;font-weight:650;line-height:1.2}
+.tile .d{color:var(--text2);font-size:13px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--text2);font-size:13px;margin:4px 0 6px}
+.sw{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.sw.o{background:none;border:2px solid var(--s2)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--text2);font-size:11px}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:6px 8px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;display:none;z-index:2}
+ul{margin:6px 0 0;padding-left:20px}li{margin-bottom:6px}
+textarea{width:100%;height:260px;font:12px/1.4 ui-monospace,Menlo,monospace;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:6px;padding:8px}
+button{background:var(--s1);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer}
+button:disabled{opacity:.6;cursor:default}
+.ok{color:var(--good);font-weight:600}.err{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+.scroll{overflow-x:auto}summary{cursor:pointer;color:var(--text2)}code{font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Neurosymbolic Energy Optimiser</h1>
+<p class="sub" id="sub">A neural network forecasts plant load; a rule engine derives the operating constraints; an optimiser plans the day and every decision is checked and explained against the rules.</p>
+<div id="status" class="card">Planning the next day…</div>
+<div id="out" hidden>
+  <div class="tiles" id="tiles"></div>
+  <div class="card">
+    <h2>Process schedule</h2>
+    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Optimised</span><span><i class="sw o"></i>Business as usual</span><span><i class="sw" style="background:var(--band)"></i>Peak tariff hours</span></div>
+    <div class="chart" id="gantt"></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Grid import (kW)</h2>
+      <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Optimised</span><span><i class="sw" style="background:var(--s2)"></i>Business as usual</span></div>
+      <div class="chart" id="grid"></div></div>
+    <div class="card"><h2>Battery state of charge (kWh)</h2><div class="legend">&nbsp;</div><div class="chart" id="soc"></div></div>
+  </div>
+  <div class="card"><h2>Why this schedule</h2><ul id="why"></ul></div>
+  <div class="grid2">
+    <div class="card"><h2>Rule verification</h2><p id="verdict"></p><div class="scroll"><table id="rules"></table></div></div>
+    <div class="card"><h2>Load forecast</h2><p id="fc" style="color:var(--text2)"></p><ul id="repairs"></ul></div>
+  </div>
+  <div class="card"><details><summary>Hourly data table</summary><div class="scroll"><table id="hourly"></table></div></details></div>
+</div>
+<div class="card">
+  <h2>Plant model</h2>
+  <p class="sub">Edit machines, tariff, battery or add rules under <code>extra_rules</code>, then re-plan.</p>
+  <textarea id="plant" spellcheck="false"></textarea>
+  <p><button id="go">Optimise</button></p>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id), NS="http://www.w3.org/2000/svg";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hh=h=>String(h).padStart(2,"0")+":00";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent&&parent.appendChild(e);return e}
+function frame(host,W,Ht){host.innerHTML="";const svg=el("svg",{viewBox:`0 0 ${W} ${Ht}`,role:"img"},host);
+  const tip=document.createElement("div");tip.className="tip";host.appendChild(tip);return{svg,tip}}
+function showTip(host,tip,evt,html){tip.innerHTML=html;tip.style.display="block";const r=host.getBoundingClientRect();
+  let x=evt.clientX-r.left+12;if(x+tip.offsetWidth>r.width)x=evt.clientX-r.left-tip.offsetWidth-12;
+  tip.style.left=Math.max(0,x)+"px";tip.style.top=Math.max(0,evt.clientY-r.top-tip.offsetHeight-8)+"px"}
+function hourAxis(svg,x,y){for(let h=0;h<=24;h+=3){el("text",{x:x(h),y:y+14,"text-anchor":"middle"},svg).textContent=hh(h)}}
+
+function gantt(host,res){
+  const tasks=res.optimised.tasks,base=res.baseline.tasks,W=1040,L=150,row=30,top=6,Ht=top+tasks.length*row+22;
+  const {svg,tip}=frame(host,W,Ht),x=h=>L+h*(W-L-10)/24,maxP=Math.max(...res.prices);
+  res.prices.forEach((p,h)=>{if(p===maxP)el("rect",{x:x(h),y:top,width:x(1)-x(0),height:tasks.length*row,fill:"var(--band)"},svg)});
+  for(let h=0;h<=24;h+=3)el("line",{x1:x(h),x2:x(h),y1:top,y2:top+tasks.length*row,stroke:"var(--line)"},svg);
+  tasks.forEach((t,i)=>{const y=top+i*row,b=base[i];
+    el("text",{x:L-8,y:y+row/2+4,"text-anchor":"end"},svg).textContent=t.name;
+    el("rect",{x:x(b.start)+1,y:y+5,width:x(b.end)-x(b.start)-2,height:row-10,rx:4,fill:"none",stroke:"var(--s2)","stroke-width":2,"stroke-dasharray":"4 3"},svg);
+    const r=el("rect",{x:x(t.start)+1,y:y+8,width:x(t.end)-x(t.start)-2,height:row-16,rx:4,fill:"var(--s1)"},svg);
+    const hit=el("rect",{x:L,y,width:W-L-10,height:row,fill:"transparent"},svg);
+    hit.onmousemove=e=>showTip(host,tip,e,`<b>${esc(t.name)}</b> · ${t.power_kw} kW<br>Optimised ${hh(t.start)}–${hh(t.end)}<br>Business as usual ${hh(b.start)}–${hh(b.end)}`);
+    hit.onmouseleave=()=>tip.style.display="none"});
+  hourAxis(svg,x,top+tasks.length*row);
+}
+function lines(host,series,unit){ // series: [{name,color,values}] values per hour (24) or per boundary (25)
+  const W=500,Ht=220,L=44,R=12,T=10,B=22,{svg,tip}=frame(host,W,Ht);
+  const max=Math.max(1,...series.flatMap(s=>s.values))*1.08,step=series[0].values.length===24;
+  const x=h=>L+h*(W-L-R)/24,y=v=>T+(Ht-T-B)*(1-v/max);
+  const tick=Math.pow(10,Math.floor(Math.log10(max)))*(max/Math.pow(10,Math.floor(Math.log10(max)))>4?1:0.5);
+  for(let v=0;v<=max;v+=tick){el("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--line)"},svg);
+    el("text",{x:L-6,y:y(v)+4,"text-anchor":"end"},svg).textContent=Math.round(v)}
+  series.forEach(s=>{let d="";s.values.forEach((v,h)=>{d+=step?`${h?"L":"M"}${x(h)},${y(v)}L${x(h+1)},${y(v)}`:`${h?"L":"M"}${x(h)},${y(v)}`});
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":2,"stroke-linejoin":"round"},svg)});
+  hourAxis(svg,x,Ht-B);
+  const cross=el("line",{y1:T,y2:Ht-B,stroke:"var(--text2)","stroke-dasharray":"3 3",visibility:"hidden"},svg);
+  const hit=el("rect",{x:L,y:T,width:W-L-R,height:Ht-T-B,fill:"transparent"},svg);
+  hit.onmousemove=e=>{const r=svg.getBoundingClientRect(),n=series[0].values.length;
+    const pos=((e.clientX-r.left)/r.width*W-L)/(W-L-R)*24,h=Math.max(0,Math.min(n-1,step?Math.floor(pos):Math.round(pos)));
+    const cx=x(step?h+.5:h);cross.setAttribute("x1",cx);cross.setAttribute("x2",cx);cross.setAttribute("visibility","visible");
+    showTip(host,tip,e,`<b>${hh(h)}</b><br>`+series.map(s=>`<i class="sw" style="background:${s.color}"></i>${esc(s.name)}: ${s.values[h].toFixed(0)} ${unit}`).join("<br>"))};
+  hit.onmouseleave=()=>{tip.style.display="none";cross.setAttribute("visibility","hidden")};
+}
+function tile(k,v,d){return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`}
+function render(res){
+  const o=res.optimised.costs,b=res.baseline.costs,s=res.savings,v=res.verification;
+  $("sub").textContent=res.plant+" — plan for the next 24 hours.";
+  $("tiles").innerHTML=tile("Daily cost",`$${o.total.toFixed(0)}`,`was $${b.total.toFixed(0)} · saves $${s.cost.toFixed(0)} (${s.percent}%)`)
+    +tile("Peak import",`${o.peak_kw.toFixed(0)} kW`,`was ${b.peak_kw.toFixed(0)} kW`)
+    +tile("CO₂",`${o.co2_kg.toFixed(0)} kg`,`was ${b.co2_kg.toFixed(0)} kg`)
+    +tile("Rule checks",`${v.checked-v.failed.length}/${v.checked}`,v.all_ok?"all constraints hold":"violations found");
+  gantt($("gantt"),res);
+  lines($("grid"),[{name:"Business as usual",color:"var(--s2)",values:res.baseline.grid_kw},{name:"Optimised",color:"var(--s1)",values:res.optimised.grid_kw}],"kW");
+  lines($("soc"),[{name:"State of charge",color:"var(--s1)",values:res.optimised.soc_kwh}],"kWh");
+  $("why").innerHTML=res.explanations.map(e=>`<li>${esc(e)}</li>`).join("");
+  $("verdict").innerHTML=v.all_ok?`<span class="ok">✓ Verified:</span> the schedule satisfies all ${v.checked} constraint checks.`
+    :`<span class="err">✗ ${v.failed.length} violations:</span> ${v.failed.map(f=>esc(f.detail)).join("; ")}`;
+  $("rules").innerHTML="<tr><th>Rule</th><th>Statement</th><th>Checks passed</th></tr>"+Object.entries(v.by_rule).map(([id,c])=>
+    `<tr><td>${esc(id)}</td><td style="text-align:left">${esc(id.split("+").map(i=>res.rules[i]||"built-in physical limit").join(" / "))}</td><td>${c.passed}/${c.checked}</td></tr>`).join("");
+  const f=res.forecast;
+  $("fc").textContent=f.source==="neural"?`Neural forecaster trained on ${f.model.training_hours} hours of ${f.model.source} history. Hold-out error ${f.model.holdout_mae_kw} kW (MAE); monotonicity violations ${(100*f.model.monotonicity_violation_rate).toFixed(1)}%.`:"Base load supplied by the caller.";
+  $("repairs").innerHTML=(f.repairs.length?f.repairs:["No forecast value needed repair: all within the plant's physical range."]).map(r=>`<li>${esc(r)}</li>`).join("");
+  $("hourly").innerHTML="<tr><th>Hour</th><th>Tariff $/kWh</th><th>Base load kW</th><th>PV kW</th><th>Grid optimised kW</th><th>Grid usual kW</th><th>Battery kWh</th></tr>"+
+    res.prices.map((p,h)=>`<tr><td>${hh(h)}</td><td>${p.toFixed(2)}</td><td>${f.base_load_kw[h]}</td><td>${res.pv_kw[h]}</td><td>${res.optimised.grid_kw[h]}</td><td>${res.baseline.grid_kw[h]}</td><td>${res.optimised.soc_kwh[h]}</td></tr>`).join("");
+  $("out").hidden=false;$("status").hidden=true;
+}
+async function plan(){
+  const btn=$("go");btn.disabled=true;$("status").hidden=false;$("status").textContent="Planning the next day…";
+  try{
+    const body=$("plant").value.trim()?{plant:JSON.parse($("plant").value)}:{};
+    const r=await fetch("/api/optimise",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const j=await r.json();if(!r.ok)throw new Error(j.detail||r.statusText);render(j);
+  }catch(e){$("status").innerHTML=`<span class="err">Could not plan:</span> ${esc(e.message)}`}
+  btn.disabled=false;
+}
+$("go").onclick=plan;
+fetch("/api/demo-plant").then(r=>r.json()).then(p=>{$("plant").value=JSON.stringify(p,null,1);plan()});
+</script>
+</body>
+</html>

@@ -127,3 +127,10 @@ print("\n".join(kb.explain("path(a, c)")))
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Related project in this repository
+
+[`energy-optimizer/`](energy-optimizer/) applies the same neurosymbolic ideas to
+industrial energy optimisation: neural load forecasting, rule-based reasoning and
+explainable scheduling, with an API, dashboard and Dockerfile. It is self-contained
+and can be moved to its own repository as is.
