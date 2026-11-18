@@ -1,4 +1,4 @@
-# Render blueprint. If this project lives in a subfolder, set rootDir to that folder.
+# Render blueprint: New > Blueprint, then pick this repository.
 services:
   - type: web
     name: nesy-energy

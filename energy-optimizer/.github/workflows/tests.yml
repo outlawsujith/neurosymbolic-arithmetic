@@ -1,0 +1,21 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t nesy-energy .
+      - run: |
+          docker run -d -p 8000:8000 --name app nesy-energy
+          for i in $(seq 30); do curl -fs localhost:8000/health && exit 0; sleep 2; done
+          docker logs app; exit 1
