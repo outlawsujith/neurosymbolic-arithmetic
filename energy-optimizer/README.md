@@ -15,6 +15,8 @@ It combines three parts:
 The symbolic layer also guards the neural output: forecast values outside the
 plant's physical range are clamped and reported before the optimiser sees them.
 
+![Dashboard: schedule, grid import, battery and rule verification](docs/dashboard.png)
+
 ## Quick start
 
 ```bash
